@@ -1,4 +1,4 @@
-package com.freetime.template.ui.theme
+package com.freetime.dachopoly.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

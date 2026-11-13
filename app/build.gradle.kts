@@ -4,13 +4,13 @@ plugins {
 }
 
 android {
-    namespace = "com.freetime.template"
+    namespace = "com.freetime.dachopoly"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.freetime.template"
+        applicationId = "com.freetime.dachopoly"
         minSdk = 24
         targetSdk = 37
         versionCode = 1

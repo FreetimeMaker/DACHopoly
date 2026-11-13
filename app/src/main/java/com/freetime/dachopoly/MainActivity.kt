@@ -1,4 +1,4 @@
-package com.freetime.template
+package com.freetime.dachopoly
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
