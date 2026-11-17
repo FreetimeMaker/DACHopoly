@@ -5,223 +5,192 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.freetime.browser.FreetimeBrowser
+import androidx.compose.ui.unit.sp
 import com.freetime.core.FreetimeCore
 import com.freetime.design.AppTheme
-import com.freetime.design.FloatingBottomNavigationBar
-import com.freetime.design.FloatingBottomNavigationGlassRoot
-import com.freetime.design.FloatingBottomNavigationItem
 import com.freetime.design.ThemeMode
-import com.freetime.donations.DonationTarget
-import com.freetime.donations.FreetimeDonationScreen
 import com.freetime.warn.FreetimeWarn
+import com.freetime.warn.FreetimeWarnContent
 import com.freetime.warn.rememberFreetimeWarnState
+
+private val tokens = listOf(Color(0xFFB84437), Color(0xFF2875AB), Color(0xFF8862AF), Color(0xFFC08A20))
+private val groups = listOf(Color(0xFF78887B), Color(0xFFBD7959), Color(0xFF68A5B7), Color(0xFFE1AF54), Color(0xFF889B65), Color(0xFFAF7DA0))
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent { TemplateApp() }
-    }
-}
-
-@Composable
-private fun TemplateApp() {
-    val context = LocalContext.current
-    var selectedTab by remember { mutableIntStateOf(0) }
-    val warning = rememberFreetimeWarnState(
-        context = context,
-        appName = "Template",
-        versionCode = 1L,
-    )
-
-    AppTheme(
-        themeMode = ThemeMode.AUTO_TIME,
-        lightHour = 7,
-        darkHour = 19,
-        floatingBottomNavigationGlassEnabled = true,
-    ) {
-        FloatingBottomNavigationGlassRoot(
-            modifier = Modifier.fillMaxSize(),
-            source = {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    MaterialTheme.colorScheme.background,
-                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
-                                    MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.25f),
-                                ),
-                            ),
-                        ),
-                )
-            },
-        ) {
-            Scaffold(
-                modifier = Modifier.fillMaxSize(),
-                containerColor = Color.Transparent,
-                bottomBar = {
-                    val items = listOf(
-                        FloatingBottomNavigationItem(
-                            label = "Home",
-                            icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-                        ),
-                        FloatingBottomNavigationItem(
-                            label = "Settings",
-                            icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
-                        ),
-                        FloatingBottomNavigationItem(
-                            label = "Donate",
-                            icon = { Icon(Icons.Default.Add, contentDescription = "Donate") },
-                        ),
-                    )
-
-                    FloatingBottomNavigationBar(
-                        items = items,
-                        selectedItemIndex = when (selectedTab) {
-                            0 -> 0
-                            1 -> 1
-                            3 -> 2
-                            else -> 0
-                        },
-                        onItemSelected = { index ->
-                            selectedTab = when (index) {
-                                0 -> 0
-                                1 -> 1
-                                else -> 3
+        val store = GameStore(this)
+        setContent {
+            AppTheme(
+                            themeMode = ThemeMode.AUTO_TIME,
+                            dynamicColor = true,
+                            floatingBottomNavigationGlassEnabled = false,
+                        ) {
+                            val warning = rememberFreetimeWarnState(
+                                context = this@MainActivity,
+                                appName = "DACHopoly",
+                                versionCode = 1L,
+                            )
+                var game by remember { mutableStateOf(store.load()) }
+                var count by rememberSaveable { mutableIntStateOf(2) }
+                var rules by rememberSaveable { mutableStateOf(false) }
+                var restart by rememberSaveable { mutableStateOf(false) }
+                fun update(next: GameState) { store.save(next); game = next }
+                Surface(Modifier.fillMaxSize()) {
+                    Column(Modifier.safeDrawingPadding().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text("DACHopoly", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Black)
+                                Text("GROSSE STÄDTE. GROSSE PLÄNE.", fontSize = 10.sp, letterSpacing = 2.sp)
                             }
-                        },
-                        searchItem = FloatingBottomNavigationItem(
-                            label = "Browser",
-                            icon = { Icon(Icons.Default.Search, contentDescription = "Browser") },
-                        ),
-                        searchSelected = selectedTab == 2,
-                        onSearchSelected = { selectedTab = 2 },
-                    )
-                },
-            ) { innerPadding ->
-                when (selectedTab) {
-                    0 -> HomeScreen(Modifier.padding(innerPadding))
-                    1 -> SettingsScreen(Modifier.padding(innerPadding))
-                    2 -> BrowserScreen(Modifier.padding(innerPadding))
-                    else -> DonationScreen(Modifier.padding(innerPadding))
+                            TextButton(onClick = { rules = true }) { Text("Regeln") }
+                        }
+                        val state = game
+                        if (state == null) {
+                            Text("Ein Spielbrett. Eure nächste Reise.", style = MaterialTheme.typography.headlineMedium)
+                            Text("Kauft Städte in Deutschland, Österreich und der Schweiz. Baut Häuser und bleibt als Letzte im Spiel.")
+                            Card(
+                                shape = MaterialTheme.shapes.extraLarge,
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                            ) {
+                                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    Text("Gemeinsam an einem Gerät", style = MaterialTheme.typography.titleLarge)
+                                    Text("Wie viele spielen mit?")
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        (2..4).forEach { n -> FilterChip(selected = count == n, onClick = { count = n }, label = { Text("$n Personen") }) }
+                                    }
+                                    Button(onClick = { update(GameRules.newGame(count)) }, modifier = Modifier.fillMaxWidth()) { Text("Spiel starten") }
+                                    Text("100 % offline · Kein Konto · Automatisch gespeichert", style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                        } else {
+                            state.players.forEachIndexed { i, p ->
+                                Row(Modifier.fillMaxWidth().background(if (i == state.current) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow, MaterialTheme.shapes.medium).padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text("● ${i + 1}", color = tokens[i], fontWeight = FontWeight.Bold)
+                                    Text("  ${p.name}${if (p.jailed) " · im Gefängnis" else ""}", Modifier.weight(1f))
+                                    Text(if (p.bankrupt) "Bankrott" else "${p.cash} €", fontWeight = FontWeight.Bold)
+                                }
+                            }
+                            Board(state)
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = MaterialTheme.shapes.extraLarge,
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+                            ) {
+                                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    Text(state.winner?.let { "${it.name} gewinnt!" } ?: "${state.active.name} ist am Zug", style = MaterialTheme.typography.titleLarge)
+                                    Text("Würfel: ${state.dice[0]} + ${state.dice[1]}   ·   ${GameRules.board[state.active.position].name}")
+                                    if (state.winner == null) {
+                                        Button(onClick = { update(if (state.rolled) GameRules.endTurn(state) else GameRules.roll(state)) }, modifier = Modifier.fillMaxWidth()) {
+                                            Text(if (state.rolled) "Zug beenden · Gerät weitergeben" else if (state.active.jailed) "Gefängnisrunde aussetzen" else "Würfeln")
+                                        }
+                                        val tile = GameRules.board[state.active.position]
+                                        if (state.rolled && !state.active.bankrupt && tile.kind == TileKind.PROPERTY && state.owners[state.active.position] == -1) {
+                                            OutlinedButton(onClick = { update(GameRules.buy(state)) }, enabled = state.active.cash >= tile.price, modifier = Modifier.fillMaxWidth()) { Text("${tile.name} kaufen · ${tile.price} €") }
+                                        }
+                                    }
+                                    Text(state.log.last(), style = MaterialTheme.typography.bodyMedium)
+                                }
+                            }
+                            Text("Deine Grundstücke", style = MaterialTheme.typography.titleLarge)
+                            val owned = GameRules.board.indices.filter { state.owners[it] == state.current }
+                            if (owned.isEmpty()) Text("Noch keine Städte. Lande auf einem freien Grundstück und kaufe es.")
+                            owned.forEach { index ->
+                                val tile = GameRules.board[index]
+                                Card(Modifier.fillMaxWidth()) {
+                                    Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Column(Modifier.weight(1f)) {
+                                            Text(tile.name, fontWeight = FontWeight.Bold)
+                                            Text("${state.houses[index]} Häuser · Miete ${GameRules.rent(state, index)} €")
+                                        }
+                                        OutlinedButton(onClick = { update(GameRules.build(state, index)) }, enabled = GameRules.build(state, index) != state) { Text("+ Haus ${tile.price / 2} €") }
+                                    }
+                                }
+                            }
+                            Text("Spielverlauf", style = MaterialTheme.typography.titleLarge)
+                            state.log.takeLast(8).reversed().forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
+                            TextButton(onClick = { restart = true }) { Text("Neues Spiel") }
+                        }
+                        Text(
+                            "Freetime Core ${FreetimeCore.SDK_VERSION} · Material 3 Expressive · Material You",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
-            }
-        }
-
-        FreetimeWarn(
-            state = warning,
-            onLearnMore = {
-                FreetimeBrowser.openExternal(
-                    context,
-                    "https://github.com/FreetimeMaker/Freetime-Core",
+                FreetimeWarn(
+                    state = warning,
+                    content = FreetimeWarnContent(
+                        title = "Hinweis zur Android-Plattform",
+                        message = { appName -> "Android-Plattformanforderungen können künftig beeinflussen, wie $appName auf manchen Geräten installiert oder weiter genutzt werden kann. Das Spiel selbst benötigt weder ein Konto noch eine Internetverbindung." },
+                        acknowledgeLabel = "Verstanden",
+                    ),
                 )
-            },
-        )
-    }
-}
-
-@Composable
-private fun HomeScreen(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text("Freetime Core Template", style = MaterialTheme.typography.headlineMedium)
-        Text(
-            text = "SDK: ${FreetimeCore.SDK_VERSION}",
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                Modifier.padding(18.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text("Material 3 Expressive", style = MaterialTheme.typography.titleMedium)
-                Text("Normal content uses Material 3 Expressive and Material You.")
-                Text("Liquid Glass is reserved for the floating bottom navigation.")
+                if (rules) AlertDialog(onDismissRequest = { rules = false }, title = { Text("So spielt ihr") }, text = {
+                    Text("2–4 Personen spielen abwechselnd an diesem Gerät, ohne Computergegner. Alle starten mit 1.500 €.\n\nWürfle, kaufe freie Städte oder zahle automatisch Miete. Über Los gibt es 200 €. Ein vollständiges Farbset verdoppelt die Grundmiete und erlaubt bis zu drei Häuser pro Stadt. Jedes Haus kostet den halben Kaufpreis und erhöht die Miete. Tippe ein Brettfeld an, um es anzusehen.\n\nSteuern kosten 200 €. Ereignisse bringen oder kosten Geld. Im Gefängnis setzt du eine Runde aus. Ein Pasch gibt keinen Extrazug.\n\nWer eine Zahlung nicht leisten kann, scheidet aus; Grundstücke gehen an den Gläubiger oder die Bank, Häuser verfallen. Die letzte verbleibende Person gewinnt. Kein Handel, keine Auktionen oder Hypotheken.\n\nDer Spielstand wird nach jeder Aktion auf diesem Gerät gespeichert.")
+                }, confirmButton = { TextButton(onClick = { rules = false }) { Text("Los geht’s") } })
+                if (restart) AlertDialog(onDismissRequest = { restart = false }, title = { Text("Neues Spiel beginnen?") }, text = { Text("Der aktuelle Spielstand wird gelöscht.") }, confirmButton = { TextButton(onClick = { store.clear(); game = null; restart = false }) { Text("Neues Spiel") } }, dismissButton = { TextButton(onClick = { restart = false }) { Text("Abbrechen") } })
             }
         }
     }
 }
 
 @Composable
-private fun SettingsScreen(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text("Settings", style = MaterialTheme.typography.headlineMedium)
-        Text("AUTO_TIME: light from 07:00, dark from 19:00.")
-        Text("Floating bottom navigation Liquid Glass is enabled.")
-    }
-}
-
-@Composable
-private fun BrowserScreen(modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text("Browser", style = MaterialTheme.typography.headlineMedium)
-        Button(
-            onClick = { FreetimeBrowser.openExternal(context, "https://free-time.me") },
-        ) {
-            Text("Open website")
+private fun Board(state: GameState) {
+    var selected by remember { mutableStateOf<Int?>(null) }
+    BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(1f).background(MaterialTheme.colorScheme.surfaceContainerHighest, MaterialTheme.shapes.extraLarge)) {
+        val cell = maxWidth / 7
+        Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("DACH", fontSize = 32.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+            Text("DEUTSCHLAND · ÖSTERREICH", fontSize = 9.sp)
+            Text("SCHWEIZ", fontSize = 9.sp)
+            Spacer(Modifier.height(12.dp))
+            Text("${state.dice[0]}  •  ${state.dice[1]}", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            Text("Felder antippen für Details", fontSize = 9.sp)
+        }
+        GameRules.board.forEachIndexed { i, tile ->
+            val (x, y) = when {
+                i <= 6 -> (6 - i) to 6
+                i <= 12 -> 0 to (12 - i)
+                i <= 18 -> (i - 12) to 0
+                else -> 6 to (i - 18)
+            }
+            Column(Modifier.offset(cell * x, cell * y).size(cell).padding(1.dp).background(MaterialTheme.colorScheme.surface, RoundedCornerShape(3.dp)).clickable { selected = i }, horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(Modifier.fillMaxWidth().height(5.dp).background(groups[tile.group]))
+                Text(tile.name, Modifier.weight(1f).padding(horizontal = 1.dp), fontSize = 8.sp, lineHeight = 9.sp, textAlign = TextAlign.Center, maxLines = 2)
+                Row {
+                    state.players.forEachIndexed { p, player -> if (!player.bankrupt && player.position == i) Text("${p + 1}", color = tokens[p], fontWeight = FontWeight.Black, fontSize = 11.sp) }
+                }
+                if (state.owners[i] >= 0) Box(Modifier.fillMaxWidth().height(3.dp).background(tokens[state.owners[i]]))
+            }
         }
     }
-}
-
-@Composable
-private fun DonationScreen(modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    FreetimeDonationScreen(
-        targets = listOf(
-            DonationTarget.Link(
-                label = "OpenCollective",
-                url = "https://opencollective.com/freetimemaker",
-            ),
-        ),
-        onLinkClick = { FreetimeBrowser.openExternal(context, it.url) },
-        modifier = modifier.fillMaxSize(),
-    )
+    selected?.let { i ->
+        val tile = GameRules.board[i]
+        AlertDialog(onDismissRequest = { selected = null }, title = { Text(tile.name) }, text = {
+            Text(if (tile.kind == TileKind.PROPERTY) "Kaufpreis: ${tile.price} €\nBesitzer: ${state.players.getOrNull(state.owners[i])?.name ?: "Bank"}\nHäuser: ${state.houses[i]}\nAktuelle Miete: ${GameRules.rent(state, i)} €\nHauspreis: ${tile.price / 2} €" else when (tile.kind) {
+                TileKind.START -> "Beim Überqueren oder Erreichen erhältst du 200 €."
+                TileKind.EVENT -> "Eine zufällige Karte bringt oder kostet Geld."
+                TileKind.TAX -> "Zahle 200 € an die Bank."
+                TileKind.JAIL -> "Nur zu Besuch – außer du wurdest hierher geschickt."
+                TileKind.GO_TO_JAIL -> "Gehe direkt ins Gefängnis und setze nächste Runde aus."
+                else -> "Verschnaufpause. Hier passiert nichts."
+            })
+        }, confirmButton = { TextButton(onClick = { selected = null }) { Text("Schließen") } })
+    }
 }
