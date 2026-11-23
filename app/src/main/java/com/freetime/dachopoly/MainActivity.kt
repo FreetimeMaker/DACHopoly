@@ -45,6 +45,7 @@ class MainActivity : ComponentActivity() {
                 var count by rememberSaveable { mutableIntStateOf(2) }
                 var rules by rememberSaveable { mutableStateOf(false) }
                 var restart by rememberSaveable { mutableStateOf(false) }
+                                var gallery by rememberSaveable { mutableStateOf(false) }
                 fun update(next: GameState) { store.save(next); game = next }
                 Surface(Modifier.fillMaxSize()) {
                     Column(Modifier.safeDrawingPadding().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -55,8 +56,10 @@ class MainActivity : ComponentActivity() {
                             }
                             TextButton(onClick = { rules = true }) { Text("Regeln") }
                         }
+                        TextButton(onClick = { gallery = true }) { Text("Originalkarten & Spielmaterial") }
                         val state = game
                         if (state == null) {
+                            ArtworkImage(GameArt.center, Modifier.fillMaxWidth().heightIn(max = 200.dp))
                             Text("Ein Spielbrett. Eure nächste Reise.", style = MaterialTheme.typography.headlineMedium)
                             Text("Spielt auf eurem fotografierten DACH-Brett: mit 34 Feldern, Chance, Kanzlei, Bahnen und Versorgungswerken. Kauft Orte, baut Häuser und bleibt als Letzte im Spiel.")
                             Card(
@@ -99,7 +102,12 @@ class MainActivity : ComponentActivity() {
                                             OutlinedButton(onClick = { update(GameRules.buy(state)) }, enabled = state.active.cash >= tile.price, modifier = Modifier.fillMaxWidth()) { Text("${tile.name} kaufen · ${tile.price} €") }
                                         }
                                     }
-                                    Text(state.log.last(), style = MaterialTheme.typography.bodyMedium)
+                                    val landed = GameRules.board[state.active.position]
+                                                                        if (state.rolled && landed.kind == TileKind.EVENT) {
+                                                                            val deck = if (landed.name == "Chance") GameArt.chance else GameArt.kanzlei
+                                                                            ArtworkImage(deck.first(), Modifier.fillMaxWidth().heightIn(max = 144.dp))
+                                                                        }
+                                                                        Text(state.log.last(), style = MaterialTheme.typography.bodyMedium)
                                 }
                             }
                             Text("Deine Grundstücke", style = MaterialTheme.typography.titleLarge)
@@ -128,6 +136,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
+                if (gallery) GameArtGallery(onDismiss = { gallery = false })
                 FreetimeWarn(
                     state = warning,
                     content = FreetimeWarnContent(

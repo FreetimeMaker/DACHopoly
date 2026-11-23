@@ -100,13 +100,23 @@ internal fun PhotoBoard(state: GameState) {
                             if (tile.canBuild) "\nHäuser: ${state.houses[index]}\nHauspreis: ${tile.price / 2} €" else "\nBahn, Fluglinie oder Versorgung: kein Häuserbau."
                     } else when (tile.kind) {
                         TileKind.START -> "Beim Erreichen oder Überqueren von GO erhältst du 200 €."
-                        TileKind.EVENT -> "${tile.name}: Eine lokale Zufallskarte bringt oder kostet Geld. Die Original-Kartentexte sind auf den Fotos nicht zu sehen; hier gelten vereinfachte Ereignisse."
+                        TileKind.EVENT -> "${tile.name}: Eine lokale Zufallskarte bringt oder kostet Geld. In dieser Partie gelten vereinfachte Ereignisse statt der aufgedruckten Originaleffekte."
                         TileKind.TAX -> "Zahle 200 € an die Bank."
                         TileKind.JAIL -> "Nur zu Besuch, außer du wurdest hierher geschickt. Dann setzt du eine Runde aus."
                         TileKind.GO_TO_JAIL -> "Gehe direkt ins Gefängnis und setze nächste Runde aus."
                         else -> "Frei Parken: Hier wird nichts bezahlt."
                     })
-                    Text("Preise und Regeln sind spielbare Ergänzungen. Nicht eindeutig lesbare Orte tragen beschreibende Namen.", style = MaterialTheme.typography.bodySmall)
+                    val artwork = GameArt.property(index) ?: when (tile.kind) {
+                        TileKind.START -> GameArt.symbols[1]
+                        TileKind.EVENT -> if (tile.name == "Chance") GameArt.chance.first() else GameArt.kanzlei.first()
+                        TileKind.TAX -> GameArt.symbols[if (tile.name == "Zusatzsteuer") 6 else 7]
+                        TileKind.JAIL -> GameArt.symbols[2]
+                        TileKind.GO_TO_JAIL -> GameArt.symbols[3]
+                        TileKind.PARK -> GameArt.symbols[4]
+                        TileKind.PROPERTY -> null
+                    }
+                    artwork?.let { ArtworkImage(it, Modifier.fillMaxWidth().heightIn(max = 360.dp)) }
+                    Text("Die Abbildung zeigt das Originalmaterial. Für diese Partie gelten die oben angezeigten Spielregeln und Euro-Beträge.", style = MaterialTheme.typography.bodySmall)
                 }
             },
             confirmButton = { TextButton(onClick = { selected = null }) { Text("Schließen") } },
