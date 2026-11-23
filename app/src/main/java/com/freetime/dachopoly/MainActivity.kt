@@ -17,8 +17,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.freetime.core.FreetimeCore
-import com.freetime.design.AppTheme
 import com.freetime.design.ThemeMode
+import com.freetime.design.rememberDarkTheme
+import com.freetime.design.templates.expressive.FreetimeTheme
 import com.freetime.warn.FreetimeWarn
 import com.freetime.warn.FreetimeWarnContent
 import com.freetime.warn.rememberFreetimeWarnState
@@ -31,16 +32,15 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val store = GameStore(this)
         setContent {
-            AppTheme(
-                            themeMode = ThemeMode.AUTO_TIME,
-                            dynamicColor = true,
-                            floatingBottomNavigationGlassEnabled = false,
-                        ) {
-                            val warning = rememberFreetimeWarnState(
-                                context = this@MainActivity,
-                                appName = "DACHopoly",
-                                versionCode = 1L,
-                            )
+            FreetimeTheme(
+                darkTheme = rememberDarkTheme(ThemeMode.AUTO_TIME),
+                dynamicColor = true,
+            ) {
+                val warning = rememberFreetimeWarnState(
+                    context = this@MainActivity,
+                    appName = "DACHopoly",
+                    versionCode = 1L,
+                )
                 var game by remember { mutableStateOf(store.load()) }
                 var count by rememberSaveable { mutableIntStateOf(2) }
                 var rules by rememberSaveable { mutableStateOf(false) }
