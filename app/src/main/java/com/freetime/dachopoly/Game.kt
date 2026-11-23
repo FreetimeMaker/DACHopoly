@@ -4,7 +4,9 @@ import kotlin.random.Random
 
 enum class TileKind { START, PROPERTY, EVENT, TAX, JAIL, GO_TO_JAIL, PARK }
 
-data class Tile(val name: String, val kind: TileKind, val price: Int = 0, val group: Int = 0)
+data class Tile(val name: String, val kind: TileKind, val price: Int = 0, val group: Int = 0) {
+    val canBuild: Boolean get() = kind == TileKind.PROPERTY && group in 1..8
+}
 
 data class Player(
     val name: String,
@@ -28,32 +30,44 @@ data class GameState(
 }
 
 object GameRules {
-    // Clockwise perimeter of a 7-by-7 board, with corners six steps apart.
+    // Rectified photo, from bottom-right GO: left, up, right, down.
+    // Unequal photographed edges: bottom 10 steps, left 8, top 8, right 8 (34 tiles).
+    // The original photo has no readable prices; these are gameplay approximations.
     val board: List<Tile> = listOf(
         Tile("Los", TileKind.START),
-        Tile("Lübeck", TileKind.PROPERTY, 100, 1),
-        Tile("Bremen", TileKind.PROPERTY, 120, 1),
-        Tile("Ereignis", TileKind.EVENT),
-        Tile("Hamburg", TileKind.PROPERTY, 140, 1),
-        Tile("Steuer", TileKind.TAX),
+        Tile("Bergwasserfall", TileKind.PROPERTY, 380, 1),
+        Tile("Kanzlei", TileKind.EVENT),
+        Tile("Verwaltungsgebäude", TileKind.PROPERTY, 360, 1),
+        Tile("Einkommensteuer", TileKind.TAX), // Diamond symbol on the photo.
+        Tile("ÖBB", TileKind.PROPERTY, 200, 9),
+        Tile("Brandenburger Tor", TileKind.PROPERTY, 340, 2),
+        Tile("Chance", TileKind.EVENT),
+        Tile("Dom", TileKind.PROPERTY, 180, 2),
+        Tile("Altstadt am Fluss", TileKind.PROPERTY, 320, 3),
         Tile("Gefängnis", TileKind.JAIL),
-        Tile("Berlin", TileKind.PROPERTY, 160, 2),
-        Tile("Leipzig", TileKind.PROPERTY, 180, 2),
-        Tile("Ereignis", TileKind.EVENT),
-        Tile("Dresden", TileKind.PROPERTY, 200, 2),
-        Tile("München", TileKind.PROPERTY, 220, 3),
+        Tile("Marktplatz", TileKind.PROPERTY, 300, 3),
+        Tile("Energieversorgung Mittelrhein", TileKind.PROPERTY, 150, 10),
+        Tile("Alpenpass", TileKind.PROPERTY, 280, 4),
+        Tile("DB", TileKind.PROPERTY, 200, 9),
+        Tile("Stadthaus", TileKind.PROPERTY, 260, 4),
+        Tile("Kanzlei", TileKind.EVENT),
+        Tile("Alpenzoo", TileKind.PROPERTY, 240, 5),
         Tile("Frei Parken", TileKind.PARK),
-        Tile("Salzburg", TileKind.PROPERTY, 240, 3),
-        Tile("Wien", TileKind.PROPERTY, 260, 3),
-        Tile("Ereignis", TileKind.EVENT),
-        Tile("Innsbruck", TileKind.PROPERTY, 280, 4),
-        Tile("Steuer", TileKind.TAX),
+        Tile("Stephansdom", TileKind.PROPERTY, 220, 5),
+        Tile("Wasserfall", TileKind.PROPERTY, 200, 6),
+        Tile("Chance", TileKind.EVENT),
+        Tile("SBB", TileKind.PROPERTY, 200, 9),
+        Tile("Schloss", TileKind.PROPERTY, 180, 6),
+        Tile("Regionalwerke Baden", TileKind.PROPERTY, 150, 10),
+        Tile("Bergsee", TileKind.PROPERTY, 160, 7),
         Tile("Gehe ins Gefängnis", TileKind.GO_TO_JAIL),
-        Tile("Basel", TileKind.PROPERTY, 300, 4),
-        Tile("Bern", TileKind.PROPERTY, 320, 4),
-        Tile("Ereignis", TileKind.EVENT),
-        Tile("Luzern", TileKind.PROPERTY, 340, 5),
-        Tile("Zürich", TileKind.PROPERTY, 360, 5),
+        Tile("Rheinfall", TileKind.PROPERTY, 140, 7),
+        Tile("Kanzlei", TileKind.EVENT),
+        Tile("Lufthansa", TileKind.PROPERTY, 200, 9),
+        Tile("Chance", TileKind.EVENT),
+        Tile("Europa-Park", TileKind.PROPERTY, 120, 8),
+        Tile("Zusatzsteuer", TileKind.TAX), // Ring symbol on the photo.
+        Tile("Altstadt", TileKind.PROPERTY, 100, 8),
     )
 
     fun newGame(count: Int): GameState {
@@ -94,9 +108,9 @@ object GameRules {
             TileKind.TAX -> charge(next, 200)
             TileKind.EVENT -> {
                 val amount = listOf(-150, -100, 50, 100, 200).random()
-                if (amount < 0) charge(next.message("Ereignis: $amount €."), -amount)
+                if (amount < 0) charge(next.message("${board[moved.position].name}: $amount €."), -amount)
                 else next.withPlayer(state.current, moved.copy(cash = moved.cash + amount))
-                    .message("Ereignis: +$amount €.")
+                    .message("${board[moved.position].name}: +$amount €.")
             }
             TileKind.PROPERTY -> {
                 val owner = next.owners[moved.position]
@@ -121,7 +135,7 @@ object GameRules {
     fun build(state: GameState, index: Int): GameState {
         if (!playable(state) || state.active.jailed || index !in board.indices) return state
         val tile = board[index]
-        if (tile.kind != TileKind.PROPERTY || state.owners[index] != state.current ||
+        if (!tile.canBuild || state.owners[index] != state.current ||
             state.houses[index] !in 0..2 || state.active.cash < tile.price / 2 ||
             board.indices.any { board[it].kind == TileKind.PROPERTY && board[it].group == tile.group && state.owners[it] != state.current }
         ) return state
@@ -147,7 +161,7 @@ object GameRules {
         if (tile.kind != TileKind.PROPERTY || owner !in state.players.indices || state.players[owner].bankrupt) return 0
         val complete = board.indices.filter { board[it].kind == TileKind.PROPERTY && board[it].group == tile.group }
             .all { state.owners[it] == owner }
-        val houses = state.houses[index].coerceIn(0, 3)
+        val houses = if (tile.canBuild) state.houses[index].coerceIn(0, 3) else 0
         return (tile.price / 10) * if (houses > 0) 1 + houses * 3 else if (complete) 2 else 1
     }
 

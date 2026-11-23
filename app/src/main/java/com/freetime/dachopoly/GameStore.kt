@@ -9,7 +9,7 @@ class GameStore(context: Context) {
     private val preferences = context.getSharedPreferences("dachopoly", Context.MODE_PRIVATE)
 
     fun save(state: GameState) {
-        val json = JSONObject().put("version", 1)
+        val json = JSONObject().put("version", 2)
             .put("players", JSONArray().apply {
                 state.players.forEach { p -> put(JSONObject().put("name", p.name).put("cash", p.cash)
                     .put("position", p.position).put("jailed", p.jailed).put("bankrupt", p.bankrupt)) }
@@ -22,7 +22,8 @@ class GameStore(context: Context) {
 
     fun load(): GameState? = runCatching {
         val json = JSONObject(preferences.getString("game", null) ?: return null)
-        require(json.getInt("version") == 1)
+        // The photographed board has a different field order from the initial prototype.
+                require(json.getInt("version") == 2)
         val players = json.getJSONArray("players")
         val state = GameState(
             players = List(players.length()) { i -> players.getJSONObject(i).let {
